@@ -2,7 +2,7 @@
 // @name          focus-hints
 // @namespace     http://github.com/nsqx
 // @version       1.0.0
-// @description   A small, Vimium-inspired userscript to enable keyboard based navigation.
+// @description   An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
 // @author        nsqx
 // @match         *://*/*
 // @grant         GM_setValue
@@ -29,7 +29,7 @@
 //
 
 /**
- * @description A small, Vimium-inspired userscript to enable keyboard based navigation.
+ * @description An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
  * @author nsqx
  * @version 1.0.0
  * @param {boolean} default_visible --- enable focus hints on initialization
@@ -58,7 +58,12 @@ function focusHints(default_visible = true) {
   host.style.width = '0!important';
   host.style.height = '0!important';
   host.style.pointerEvents = 'none!important';
-  const shadow_root = host.attachShadow({ mode: 'closed' });
+  let shadow_root;
+  try {
+    shadow_root = host.attachShadow({ mode: 'closed' });
+  } catch (e) {
+    shadow_root = host;
+  }
 
   // setup shadow styles
   const css_text = `
@@ -109,11 +114,12 @@ function focusHints(default_visible = true) {
   transform: translateX(-50%);
 }
   `;
-  if (Array.isArray(shadow_root.adoptedStyleSheets)) {
+  if (shadow_root.adoptedStyleSheets && typeof CSSStyleSheet !== 'undefined' && CSSStyleSheet.prototype.replaceSync) {
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(css_text);
     shadow_root.adoptedStyleSheets = [sheet];
   } else {
+    // adopted-style-sheets shim
     const style = document.createElement('style');
     style.textContent = css_text;
     shadow_root.appendChild(style);
@@ -123,7 +129,7 @@ function focusHints(default_visible = true) {
   const overlay = shadow_root.appendChild(document.createElement('div'));
   overlay.className = overlay_id;
 
-  // visibility toggling & shim for popover
+  // visibility toggling & popover shim
   if ('popover' in overlay || Object.prototype.hasOwnProperty.call(HTMLElement, 'popover')) {
     overlay.popover = 'manual';
   } else {
@@ -150,17 +156,26 @@ function focusHints(default_visible = true) {
   // fn: get tabbable elements
   function get_tabbable() {
     let tabbable = [];
-    for (const el of document.querySelectorAll(
-      'input,select,textarea,button,object,audio,video,details,[contenteditable]'
-    )) {
-      if (!el.hasAttribute('disabled') && el.checkVisibility({ visibilityProperty: true }))
-        tabbable.push(el);
-    }
-    for (const el of document.querySelectorAll('[tabindex]')) {
-      if (el.checkVisibility({ visibilityProperty: true })) tabbable.push(el);
-    }
-    for (const el of document.querySelectorAll('area[href],a[href]')) {
-      if (el.checkVisibility({ visibilityProperty: true })) tabbable.push(el);
+    for (const el of document.querySelectorAll('input,select,textarea,button,object,audio,video,details,[contenteditable],area[href],a[href],[tabindex]')) {
+      if (el.hasAttribute('disabled')) continue;
+
+      let visible = false;
+      if (typeof el.checkVisibility === 'function') {
+        visible = el.checkVisibility({
+          visibilityProperty: true,
+          checkOpacity: true,
+        });
+      } else {
+        // check-visibility shim
+        const style = window.getComputedStyle(el);
+        visible =
+          (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0) &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          style.opacity !== '0';
+      }
+
+      if (visible) tabbable.push(el);
     }
     return tabbable;
   }
@@ -175,7 +190,7 @@ function focusHints(default_visible = true) {
   }
 
   // fn: generate label text (base implementation provided by Gemini)
-  const code_particles = 'ABCDEFGIMNOPQRSTUVWXYZ;'; // IJKL reserved for page movement
+  const code_particles = 'ABCDEFGIMNOPQRSTUVWXYZ;'; // HJKL reserved for page movement
   const code_is_case_sensitive = false;
   function* generate_codes(code_particles, ln) {
     const base = code_particles.length;
@@ -268,14 +283,28 @@ function focusHints(default_visible = true) {
 
   let frame_id = null;
   const frame = i => {
-    for (const i in labels) {
-      position_label(labels[i]);
-    }
-    for (const i in labels) {
-      position_label_render(labels[i]);
-    }
-    frame_id = requestAnimationFrame(frame);
+    if (frame_id) cancelAnimationFrame(frame_id);
+    frame_id = requestAnimationFrame(() => {
+      // (measure)
+      for (const i in labels) {
+        position_label(labels[i]);
+      }
+      // (manipulate)
+      for (const i in labels) {
+        position_label_render(labels[i]);
+      }
+      frame_id = null;
+    })
   };
+  function add_listeners() {
+    window.addEventListener('scroll', frame, { capture: true, passive: true });
+    window.addEventListener('resize', frame, { passive: true });
+  }
+  function clear_listeners() {
+    window.removeEventListener('scroll', frame, true);
+    window.removeEventListener('resize', frame);
+    if (frame_id) cancelAnimationFrame(frame_id);
+  }
 
   let keybind = '';
   let indicator_timeout = null;
@@ -286,96 +315,96 @@ function focusHints(default_visible = true) {
     frame_id = requestAnimationFrame(frame);
   }
   window.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === '`') {
+    if (e.ctrlKey && e.key === '`') { // 1
       e.preventDefault();
       keybind = '';
       is_hints_active = !is_hints_active;
       if (is_hints_active) {
         setup();
         overlay.showPopover();
-        frame_id = requestAnimationFrame(frame);
+        add_listeners();
       } else {
         overlay.hidePopover();
         clear();
-        cancelAnimationFrame(frame_id);
+        clear_listeners();
       }
       return;
     }
     if (!is_hints_active) {
       return;
-    } else {
-      if (e.key === '`') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        clear();
-        setup();
-      } else if (!e.ctrlKey && !e.altKey && !e.metaKey) {
-        let key = e.key;
-        let key_upper = key.toUpperCase();
-        switch (key_upper) {
-          case 'K':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
-            return;
-          case 'J':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
-            return;
-          case 'H':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollBy({ left: -window.innerWidth / 2, behavior: 'smooth' });
-            return;
-          case 'L':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollBy({ left: window.innerWidth / 2, behavior: 'smooth' });
-            return;
-          case '9':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-          case '8':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-            return;
-          case '7':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollTo({ left: 0, behavior: 'smooth' });
-            return;
-          case '0':
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'smooth' });
-            return;
-        }
-        if (!code_is_case_sensitive) key = key_upper;
-        if (code_particles.indexOf(key) !== -1) {
+    }
+    if (e.key === '`') { // 2
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      clear();
+      setup();
+    } else if (!e.ctrlKey && !e.altKey && !e.metaKey) { // 3
+      let key = e.key;
+      let key_upper = key.toUpperCase();
+      switch (key_upper) {
+        case 'K':
           e.preventDefault();
           e.stopImmediatePropagation();
-          keybind += key;
-          clearTimeout(indicator_timeout);
-          indicator.style.opacity = '1';
+          window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
+          return;
+        case 'J':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
+          return;
+        case 'H':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollBy({ left: -window.innerWidth / 2, behavior: 'smooth' });
+          return;
+        case 'L':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollBy({ left: window.innerWidth / 2, behavior: 'smooth' });
+          return;
+        case '9':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        case '8':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+          return;
+        case '7':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollTo({ left: 0, behavior: 'smooth' });
+          return;
+        case '0':
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'smooth' });
+          return;
+      }
+      if (!code_is_case_sensitive) key = key_upper;
+      if (code_particles.indexOf(key) !== -1) { // 4
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        keybind += key;
+        clearTimeout(indicator_timeout);
+        indicator.style.opacity = '1';
+        indicator.textContent = keybind;
+        if (keybind.length !== code_length) {
+          return;
+        }
+        const ref = labels[keybind];
+        if (typeof ref !== 'undefined') {
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+          ref.hintTarget.focus({ focusVisible: true });
+          keybind = '';
+          indicator_timeout = setTimeout(i => {
+            indicator.style.opacity = '0';
+          }, 1000);
+        } else {
+          keybind = keybind.slice(1);
           indicator.textContent = keybind;
-          if (keybind.length === code_length) {
-            const ref = labels[keybind];
-            if (typeof ref !== 'undefined') {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
-              ref.hintTarget.focus({ focusVisible: true });
-              keybind = '';
-              indicator_timeout = setTimeout(i => {
-                indicator.style.opacity = '0';
-              }, 1000);
-            } else {
-              keybind = keybind.slice(1);
-              indicator.textContent = keybind;
-            }
-          }
         }
       }
     }
