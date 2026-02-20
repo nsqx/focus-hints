@@ -315,7 +315,7 @@ function focusHints(default_visible = true) {
     labels = {};
     indicator = '';
     codes = null;
-    overlay.innerHTML = '';
+    overlay.textContent = '';
   }
 
   let frame_id = null;
