@@ -156,7 +156,7 @@ function focusHints(default_visible = true) {
   // fn: get tabbable elements
   function get_tabbable() {
     let tabbable = [];
-    for (const el of document.querySelectorAll('input,select,textarea,button,object,audio,video,details,[contenteditable],area[href],a[href],[tabindex]')) {
+    for (const el of document.querySelectorAll('input,select,textarea,button,object,audio,video,summary,[contenteditable],area[href],a[href],[tabindex]')) {
       if (el.hasAttribute('disabled')) continue;
 
       let visible = false;
@@ -190,26 +190,29 @@ function focusHints(default_visible = true) {
   }
 
   // fn: generate label text (base implementation provided by Gemini)
-  const code_particles = 'ABCDEFGIMNOPQRSTUVWXYZ;'; // HJKL reserved for page movement
+  const code_particles = 'ABCDEFGIMNOPQRSTUVWXYZ;,'; // HJKL reserved for page movement
+  // const code_particles = 'SADFGEWQRYIOPZXCVBNM;,'; // ergonomic: QWERTY
   const code_is_case_sensitive = false;
-  function* generate_codes(code_particles, ln) {
+  function* generate_codes(code_particles, ln, random) {
     const base = code_particles.length;
-    const s = function* (length) {
-      const total = base ** length;
-      const skip = total % 31 === 0 ? 37 : 31;
-      let current = Math.floor(Math.random() * total);
-      for (let i = 0; i < total; i++) {
+    const total = base ** ln;
+    const skip = total % 31 === 0 ? 37 : 31;
+    let current = Math.floor(Math.random() * total);
+    for (let i = 0; i < total; i++) {
+      let val;
+      if (random) {
         current = (current + skip) % total;
-        let val = current;
-        let str = '';
-        for (let j = 0; j < length; j++) {
+        val = current;
+      } else {
+        val = i;
+      }
+      let str = '';
+        for (let j = 0; j < ln; j++) {
           str = code_particles[val % base] + str;
           val = (val / base) | 0;
         }
-        yield str;
-      }
-    };
-    yield* s(ln);
+      yield str;
+    }
     console.error(
       `too many tabbable elements (more than ${Math.pow(code_particles.length, ln)} present)!?!?`
     );
@@ -312,7 +315,7 @@ function focusHints(default_visible = true) {
   if (default_visible) {
     setup();
     overlay.showPopover();
-    frame_id = requestAnimationFrame(frame);
+    add_listeners();
   }
   window.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === '`') { // 1
@@ -391,7 +394,10 @@ function focusHints(default_visible = true) {
         clearTimeout(indicator_timeout);
         indicator.style.opacity = '1';
         indicator.textContent = keybind;
-        if (keybind.length !== code_length) {
+        if (keybind.length < code_length) {
+          return;
+        } else if (keybind.length > code_length) {
+          keybind = '';
           return;
         }
         const ref = labels[keybind];
@@ -403,8 +409,13 @@ function focusHints(default_visible = true) {
             indicator.style.opacity = '0';
           }, 1000);
         } else {
-          keybind = keybind.slice(1);
-          indicator.textContent = keybind;
+          // keybind = keybind.slice(1);
+          // indicator.textContent = keybind;
+          indicator.textContent = keybind + '?';
+          keybind = '';
+          indicator_timeout = setTimeout(i => {
+            indicator.style.opacity = '0';
+          }, 1000);
         }
       }
     }
