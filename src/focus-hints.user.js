@@ -34,7 +34,7 @@
  * @version 1.0.0
  * @param {boolean} default_visible --- enable focus hints on initialization
  */
-function focusHints(default_visible = true) {
+function focusHints({ default_visible = true, alphabetical = true } = {}) {
   // check if an instance is already present
   if (typeof window.__focusHintsSnowflake__ === 'string') return;
 
@@ -199,8 +199,7 @@ function focusHints(default_visible = true) {
       let current = walker.nextNode();
       while (current) {
         if (use_shadow && current.shadowRoot) {
-          if (is_tabbable(current))
-            tabbable.push(current);
+          if (is_tabbable(current)) tabbable.push(current);
           // walk shadow root
           walk(current.shadowRoot);
         } else {
@@ -224,31 +223,47 @@ function focusHints(default_visible = true) {
   }
 
   // fn: generate label text (base implementation provided by Gemini)
-  const code_particles = 'ABCDEFGIMNOPQRSTUVWXYZ;,'; // HJKL reserved for page movement
-  // const code_particles = 'SADFGEWQRYIOPZXCVBNM;,'; // ergonomic: QWERTY
+  let code_particles;
+  let code_particles_safe;
+  const reserved = 'HJKL';
+  if (alphabetical) {
+    code_particles_safe = 'ABCDEFGIMNOPQRSTUVWXYZ'
+      .split('')
+      .filter(c => !reserved.includes(c))
+      .join(''); // HJKL reserved for page movement
+    code_particles = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ;,';
+  } else {
+    // two-handed ergonomic layout for QWERTY layouts
+    code_particles_safe = 'SDFGZXCVAQWER'
+      .split('')
+      .filter(c => !reserved.includes(c))
+      .join('');
+    code_particles = 'HJKL;NM,UIOPYBT';
+  }
   const code_is_case_sensitive = false;
-  function* generate_codes(code_particles, ln, random) {
+  function* generate_codes(code_particles, ln, random = false) {
     const base = code_particles.length;
-    const total = base ** ln;
+    const safe_base = code_particles_safe.length;
+    const total = ln === 1 ? safe_base : safe_base * base ** (ln - 1);
+
     const skip = total % 31 === 0 ? 37 : 31;
     let current = Math.floor(Math.random() * total);
     for (let i = 0; i < total; i++) {
-      let val;
-      if (random) {
-        current = (current + skip) % total;
-        val = current;
-      } else {
-        val = i;
-      }
+      let val = random ? (current = (current + skip) % total) : i;
       let str = '';
       for (let j = 0; j < ln; j++) {
-        str = code_particles[val % base] + str;
-        val = (val / base) | 0;
+        if (j === 0) {
+          str = code_particles_safe[val % safe_base] + str;
+          val = (val / safe_base) | 0;
+        } else {
+          str = code_particles[val % base] + str;
+          val = (val / base) | 0;
+        }
       }
       yield str;
     }
     console.error(
-      `too many tabbable elements (more than ${Math.pow(code_particles.length, ln)} present)!?!?`
+      `exhausted all unique labels (more than ${Math.pow(code_particles.length, ln)} present)!`
     );
   }
 
@@ -280,11 +295,11 @@ function focusHints(default_visible = true) {
   function setup() {
     // get tabbable elements
     tabbable = get_tabbable();
-    if (tabbable.length <= code_particles.length) {
+    if (tabbable.length <= code_particles_safe.length) {
       code_length = 1;
-    } else if (tabbable.length <= Math.pow(code_particles.length, 2)) {
+    } else if (tabbable.length <= code_particles_safe.length * code_particles.length) {
       code_length = 2;
-    } else if (tabbable.length <= Math.pow(code_particles.length, 3)) {
+    } else if (tabbable.length <= code_particles_safe.length * Math.pow(code_particles.length, 2)) {
       code_length = 3;
     } else {
       code_length = 4;
@@ -381,50 +396,51 @@ function focusHints(default_visible = true) {
       // 3
       let key = e.key;
       let key_upper = key.toUpperCase();
-      switch (key_upper) {
-        case 'K':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
-          return;
-        case 'J':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
-          return;
-        case 'H':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollBy({ left: -window.innerWidth / 2, behavior: 'smooth' });
-          return;
-        case 'L':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollBy({ left: window.innerWidth / 2, behavior: 'smooth' });
-          return;
-        case '9':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          return;
-        case '8':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-          return;
-        case '7':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollTo({ left: 0, behavior: 'smooth' });
-          return;
-        case '0':
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'smooth' });
-          return;
-      }
+      if (keybind === '')
+        switch (key_upper) {
+          case 'K':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
+            return;
+          case 'J':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
+            return;
+          case 'H':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollBy({ left: -window.innerWidth / 2, behavior: 'smooth' });
+            return;
+          case 'L':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollBy({ left: window.innerWidth / 2, behavior: 'smooth' });
+            return;
+          case '9':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          case '8':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+            return;
+          case '7':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollTo({ left: 0, behavior: 'smooth' });
+            return;
+          case '0':
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'smooth' });
+            return;
+        }
       if (!code_is_case_sensitive) key = key_upper;
-      if (code_particles.indexOf(key) !== -1) {
+      if (code_particles.indexOf(key) !== -1 || code_particles_safe.indexOf(key) !== -1) {
         // 4
         e.preventDefault();
         e.stopImmediatePropagation();
