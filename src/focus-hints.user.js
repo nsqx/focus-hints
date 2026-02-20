@@ -231,9 +231,9 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
   }
 
   // fn: make a label with text
-  function make_label(text) {
+  function make_label(text, additional = '') {
     const label = document.createElement('div');
-    label.className = 'label';
+    label.className = additional ? 'label ' + additional : 'label';
     label.textContent = text;
     label.ariaHidden = 'true';
     return label;
@@ -340,6 +340,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     indicator.className = 'indicator';
     indicator.style.opacity = '0';
   }
+
   // fn: clear labels
   function clear() {
     code_length = 0;
@@ -350,6 +351,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     overlay.textContent = '';
   }
 
+  // update label positions
   let frame_id = null;
   const frame = i => {
     if (frame_id) cancelAnimationFrame(frame_id);
@@ -365,14 +367,34 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       frame_id = null;
     });
   };
+
+  // fn: observe DOM mutations
+  let mutation_timeout = null;
+  const observer = new MutationObserver(mutations => {
+    if (!is_hints_active) return;
+
+    if (mutations.some(m => m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
+      if (mutation_timeout) clearTimeout(mutation_timeout);
+      mutation_timeout = setTimeout(() => {
+        clear();
+        setup();
+      }, 200);
+    }
+  });
+
   function add_listeners() {
     window.addEventListener('scroll', frame, { capture: true, passive: true });
     window.addEventListener('resize', frame, { passive: true });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   }
   function clear_listeners() {
     window.removeEventListener('scroll', frame, true);
     window.removeEventListener('resize', frame);
     if (frame_id) cancelAnimationFrame(frame_id);
+    observer.disconnect();
   }
 
   let keybind = '';
