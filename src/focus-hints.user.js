@@ -225,6 +225,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       }
     }
 
+    if (!document.body) return [];
     walk(document.body);
     return tabbable;
   }
@@ -377,12 +378,6 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
   let keybind = '';
   let indicator_timeout = null;
   let is_hints_active = default_visible;
-  if (default_visible) {
-    clear();
-    setup();
-    overlay.showPopover();
-    add_listeners();
-  }
 
   function clear_keybind() {
     keybind = '';
