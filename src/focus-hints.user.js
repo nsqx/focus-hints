@@ -8,7 +8,7 @@
 // @grant         GM_setValue
 // @grant         GM_getValue
 // @grant         GM_registerMenuCommand
-// @run-at        document-idle
+// @run-at        document-start
 // @downloadURL   https://raw.githubusercontent.com/nsqx/focus-hints/main/src/focus-hints.user.js
 // ==/UserScript==
 
@@ -20,10 +20,10 @@
   GM_registerMenuCommand(`${auto_show ? 'Hide' : 'Show'} focus hints by default`, () => {
     auto_show = !auto_show;
     GM_setValue('nsqx/focus-hints:show-by-default', auto_show);
-    console.log(`focus-hints are now ${auto_show ? 'visible' : 'hidden'} by default.`);
+    location.reload();
   });
 
-  focusHints(auto_show);
+  focusHints({ default_visible: auto_show});
 })();
 
 //
@@ -252,7 +252,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       let val = random ? (current = (current + skip) % total) : i;
       let str = '';
       for (let j = 0; j < ln; j++) {
-        if (j === 0) {
+        if (j === ln - 1) {
           str = code_particles_safe[val % safe_base] + str;
           val = (val / safe_base) | 0;
         } else {
@@ -366,6 +366,15 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     overlay.showPopover();
     add_listeners();
   }
+
+  function clear_keybind() {
+    keybind = '';
+    indicator.style.opacity = '0';
+    for (const code in labels) {
+      labels[code].style.opacity = '';
+    }
+  }
+
   window.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === '`') {
       // 1
@@ -439,6 +448,14 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
             window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'smooth' });
             return;
         }
+      if (key === 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        keybind = '';
+        clearTimeout(indicator_timeout);
+        clear_keybind();
+        return;
+      }
       if (!code_is_case_sensitive) key = key_upper;
       if (code_particles.indexOf(key) !== -1 || code_particles_safe.indexOf(key) !== -1) {
         // 4
@@ -448,27 +465,41 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
         clearTimeout(indicator_timeout);
         indicator.style.opacity = '1';
         indicator.textContent = keybind;
+
+        for (const code in labels) {
+          if (!code.startsWith(keybind)) {
+            labels[code].style.opacity = '0.2';
+          } else {
+            labels[code].style.opacity = '';
+          }
+        }
+
+        indicator_timeout = setTimeout(i => {
+          clear_keybind();
+        }, 3000);
+
         if (keybind.length < code_length) {
           return;
         } else if (keybind.length > code_length) {
-          keybind = '';
+          clear_keybind();
           return;
         }
+
         const ref = labels[keybind];
         if (typeof ref !== 'undefined') {
           window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
           ref.hintTarget.focus({ focusVisible: true });
           keybind = '';
+          clearTimeout(indicator_timeout);
           indicator_timeout = setTimeout(i => {
-            indicator.style.opacity = '0';
+            clear_keybind();
           }, 1000);
         } else {
-          // keybind = keybind.slice(1);
-          // indicator.textContent = keybind;
           indicator.textContent = keybind + '?';
           keybind = '';
+          clearTimeout(indicator_timeout);
           indicator_timeout = setTimeout(i => {
-            indicator.style.opacity = '0';
+            clear_keybind();
           }, 1000);
         }
       }
