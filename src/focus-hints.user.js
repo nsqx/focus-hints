@@ -23,7 +23,7 @@
     location.reload();
   });
 
-  focusHints({ default_visible: auto_show});
+  focusHints({ default_visible: auto_show });
 })();
 
 //
@@ -46,6 +46,22 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     return u;
   })(14);
   window.__focusHintsSnowflake__ = snowflake;
+
+  // register keydown handler
+  window.addEventListener('keydown', keydown_handler, true);
+
+  // fn: initial paint & setup
+  function trigger_paint() {
+    if (!is_hints_active || !document.body) return;
+    clear();
+    if (default_visible) {
+      setup();
+      overlay.showPopover();
+      add_listeners();
+    }
+  }
+  window.addEventListener('DOMContentLoaded', trigger_paint);
+  window.addEventListener('load', trigger_paint);
 
   // setup host element
   const overlay_id = `focus-hints-${snowflake}`;
@@ -175,7 +191,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       if (!target) return false;
 
       if (typeof el.checkVisibility === 'function') {
-        return el.checkVisibility({ visibilityProperty: true, checkOpacity: true });
+        return el.checkVisibility({ visibilityProperty: true });
       } else {
         // check-visibility shim
         const style = window.getComputedStyle(el);
@@ -269,11 +285,11 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
 
   // fn: (measure) get label coordinates
   function position_label(label) {
-    label.hintLeft = label.hintTarget.getBoundingClientRect().x;
-    label.hintTop = label.hintTarget.getBoundingClientRect().y;
+    label.hintLeft = label.hintTarget.getClientRects()[0].x;
+    label.hintTop = label.hintTarget.getClientRects()[0].y;
   }
   // fn: (manipulate) compose label coordinates
-  function position_label_render(label, width = 24, height = 18) {
+  function position_label_render(label, width = code_length * 11, height = 18) {
     const x = label.hintLeft;
     const y = label.hintTop;
     if (label.hintLeft - width > 0) {
@@ -362,6 +378,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
   let indicator_timeout = null;
   let is_hints_active = default_visible;
   if (default_visible) {
+    clear();
     setup();
     overlay.showPopover();
     add_listeners();
@@ -374,14 +391,24 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       labels[code].style.opacity = '';
     }
   }
+  function keybind_not_found() {
+    indicator.textContent = keybind + '?';
+    keybind = '';
+    clearTimeout(indicator_timeout);
+    indicator_timeout = setTimeout(i => {
+      clear_keybind();
+    }, 1000);
+  }
 
-  window.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === '`') {
+  function keydown_handler(e) {
+    if ((e.ctrlKey && e.key === '`') || (is_hints_active && e.key === 'Escape' && keybind === '')) {
       // 1
       e.preventDefault();
+      e.stopImmediatePropagation();
       keybind = '';
       is_hints_active = !is_hints_active;
       if (is_hints_active) {
+        clear();
         setup();
         overlay.showPopover();
         add_listeners();
@@ -395,8 +422,11 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     if (!is_hints_active) {
       return;
     }
-    if (e.key === '`') {
+    if (e.key === 'Enter' || e.key === ' ') {
       // 2
+      clear();
+      setup();
+    } else if (e.key === '`') {
       e.preventDefault();
       e.stopImmediatePropagation();
       clear();
@@ -410,42 +440,42 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
           case 'K':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
+            window.scrollBy({ top: -window.innerHeight / 2, behavior: 'instant' });
             return;
           case 'J':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
+            window.scrollBy({ top: window.innerHeight / 2, behavior: 'instant' });
             return;
           case 'H':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollBy({ left: -window.innerWidth / 2, behavior: 'smooth' });
+            window.scrollBy({ left: -window.innerWidth / 2, behavior: 'instant' });
             return;
           case 'L':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollBy({ left: window.innerWidth / 2, behavior: 'smooth' });
+            window.scrollBy({ left: window.innerWidth / 2, behavior: 'instant' });
             return;
           case '9':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
             return;
           case '8':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
             return;
           case '7':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollTo({ left: 0, behavior: 'smooth' });
+            window.scrollTo({ left: 0, behavior: 'instant' });
             return;
           case '0':
             e.preventDefault();
             e.stopImmediatePropagation();
-            window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'smooth' });
+            window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'instant' });
             return;
         }
       if (key === 'Escape') {
@@ -462,18 +492,24 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
         e.preventDefault();
         e.stopImmediatePropagation();
         keybind += key;
-        clearTimeout(indicator_timeout);
         indicator.style.opacity = '1';
         indicator.textContent = keybind;
 
+        let exists = false;
         for (const code in labels) {
           if (!code.startsWith(keybind)) {
             labels[code].style.opacity = '0.2';
           } else {
             labels[code].style.opacity = '';
+            exists = true;
           }
         }
+        if (!exists) {
+          keybind_not_found();
+          return;
+        }
 
+        clearTimeout(indicator_timeout);
         indicator_timeout = setTimeout(i => {
           clear_keybind();
         }, 3000);
@@ -495,14 +531,9 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
             clear_keybind();
           }, 1000);
         } else {
-          indicator.textContent = keybind + '?';
-          keybind = '';
-          clearTimeout(indicator_timeout);
-          indicator_timeout = setTimeout(i => {
-            clear_keybind();
-          }, 1000);
+          keybind_not_found();
         }
       }
     }
-  });
+  }
 }
