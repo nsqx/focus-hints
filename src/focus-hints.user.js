@@ -114,7 +114,11 @@ function focusHints(default_visible = true) {
   transform: translateX(-50%);
 }
   `;
-  if (shadow_root.adoptedStyleSheets && typeof CSSStyleSheet !== 'undefined' && CSSStyleSheet.prototype.replaceSync) {
+  if (
+    shadow_root.adoptedStyleSheets &&
+    typeof CSSStyleSheet !== 'undefined' &&
+    CSSStyleSheet.prototype.replaceSync
+  ) {
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(css_text);
     shadow_root.adoptedStyleSheets = [sheet];
@@ -154,29 +158,59 @@ function focusHints(default_visible = true) {
 
   // ---
   // fn: get tabbable elements
-  function get_tabbable() {
-    let tabbable = [];
-    for (const el of document.querySelectorAll('input,select,textarea,button,object,audio,video,summary,[contenteditable],area[href],a[href],[tabindex]')) {
-      if (el.hasAttribute('disabled')) continue;
+  function get_tabbable(use_shadow = true) {
+    const tabbable = [];
 
-      let visible = false;
+    const is_tabbable = el => {
+      if (el.disabled) return false;
+      const tag = el.tagName.toLowerCase();
+      const target =
+        ['input', 'select', 'textarea', 'button', 'object', 'summary', 'audio', 'video'].indexOf(
+          tag
+        ) !== -1 ||
+        (tag === 'a' && el.hasAttribute('href')) ||
+        (tag === 'area' && el.hasAttribute('href')) ||
+        el.hasAttribute('contenteditable') ||
+        el.hasAttribute('tabindex');
+      if (!target) return false;
+
       if (typeof el.checkVisibility === 'function') {
-        visible = el.checkVisibility({
-          visibilityProperty: true,
-          checkOpacity: true,
-        });
+        return el.checkVisibility({ visibilityProperty: true, checkOpacity: true });
       } else {
         // check-visibility shim
         const style = window.getComputedStyle(el);
-        visible =
+        return (
           (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0) &&
           style.visibility !== 'hidden' &&
           style.display !== 'none' &&
-          style.opacity !== '0';
+          style.opacity !== '0'
+        );
       }
+    };
 
-      if (visible) tabbable.push(el);
+    function walk(root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+        acceptNode(node) {
+          if (use_shadow && node.shadowRoot) return NodeFilter.FILTER_ACCEPT;
+          return is_tabbable(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        },
+      });
+
+      let current = walker.nextNode();
+      while (current) {
+        if (use_shadow && current.shadowRoot) {
+          if (is_tabbable(current))
+            tabbable.push(current);
+          // walk shadow root
+          walk(current.shadowRoot);
+        } else {
+          tabbable.push(current);
+        }
+        current = walker.nextNode();
+      }
     }
+
+    walk(document.body);
     return tabbable;
   }
 
@@ -207,10 +241,10 @@ function focusHints(default_visible = true) {
         val = i;
       }
       let str = '';
-        for (let j = 0; j < ln; j++) {
-          str = code_particles[val % base] + str;
-          val = (val / base) | 0;
-        }
+      for (let j = 0; j < ln; j++) {
+        str = code_particles[val % base] + str;
+        val = (val / base) | 0;
+      }
       yield str;
     }
     console.error(
@@ -297,7 +331,7 @@ function focusHints(default_visible = true) {
         position_label_render(labels[i]);
       }
       frame_id = null;
-    })
+    });
   };
   function add_listeners() {
     window.addEventListener('scroll', frame, { capture: true, passive: true });
@@ -318,7 +352,8 @@ function focusHints(default_visible = true) {
     add_listeners();
   }
   window.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === '`') { // 1
+    if (e.ctrlKey && e.key === '`') {
+      // 1
       e.preventDefault();
       keybind = '';
       is_hints_active = !is_hints_active;
@@ -336,12 +371,14 @@ function focusHints(default_visible = true) {
     if (!is_hints_active) {
       return;
     }
-    if (e.key === '`') { // 2
+    if (e.key === '`') {
+      // 2
       e.preventDefault();
       e.stopImmediatePropagation();
       clear();
       setup();
-    } else if (!e.ctrlKey && !e.altKey && !e.metaKey) { // 3
+    } else if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+      // 3
       let key = e.key;
       let key_upper = key.toUpperCase();
       switch (key_upper) {
@@ -387,7 +424,8 @@ function focusHints(default_visible = true) {
           return;
       }
       if (!code_is_case_sensitive) key = key_upper;
-      if (code_particles.indexOf(key) !== -1) { // 4
+      if (code_particles.indexOf(key) !== -1) {
+        // 4
         e.preventDefault();
         e.stopImmediatePropagation();
         keybind += key;
