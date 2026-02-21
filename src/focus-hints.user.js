@@ -441,8 +441,11 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     }
     if (e.key === 'Enter' || e.key === ' ') {
       // 2
-      clear();
-      setup();
+      clearTimeout(mutation_timeout);
+      mutation_timeout = setTimeout(() => {
+        clear();
+        setup();
+      }, 200);
     } else if (e.key === '`') {
       e.preventDefault();
       e.stopImmediatePropagation();
