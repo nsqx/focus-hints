@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name          focus-hints
+// @name          focus hints
 // @namespace     http://github.com/nsqx
 // @version       1.0.0
 // @description   An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
