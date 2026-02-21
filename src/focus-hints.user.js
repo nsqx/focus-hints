@@ -9,7 +9,7 @@
 // @grant         GM_getValue
 // @grant         GM_registerMenuCommand
 // @run-at        document-start
-// @downloadURL   https://raw.githubusercontent.com/nsqx/focus-hints/main/src/focus-hints.user.js
+// @downloadURL   https://github.com/nsqx/focus-hints/raw/refs/heads/main/src/focus-hints.user.js
 // ==/UserScript==
 
 (function () {
