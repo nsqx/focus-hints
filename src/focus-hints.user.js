@@ -351,6 +351,18 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     overlay.textContent = '';
   }
 
+  // fn: refresh & keep indicator state
+  function refresh_preserve() {
+    let indicator_visible = indicator.style.opacity !== '0';
+    let indicator_text = indicator.textContent;
+    clear();
+    setup();
+    if (indicator_visible) {
+      indicator.style.opacity = '1';
+      indicator.textContent = indicator_text;
+    }
+  }
+
   // update label positions
   let frame_id = null;
   const frame = i => {
@@ -376,14 +388,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     if (mutations.some(m => m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
       if (mutation_timeout) clearTimeout(mutation_timeout);
       mutation_timeout = setTimeout(() => {
-        let indicator_visible = indicator.style.opacity !== '0';
-        let indicator_text = indicator.textContent;
-        clear();
-        setup();
-        if (indicator_visible) {
-          indicator.style.opacity = '1';
-          indicator.textContent = indicator_text;
-        }
+        refresh_preserve();
       }, 200);
     }
   });
@@ -449,14 +454,12 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       // 2
       clearTimeout(mutation_timeout);
       mutation_timeout = setTimeout(() => {
-        clear();
-        setup();
+        refresh_preserve();
       }, 200);
     } else if (e.key === '`') {
       e.preventDefault();
       e.stopImmediatePropagation();
-      clear();
-      setup();
+      refresh_preserve();
     } else if (!e.ctrlKey && !e.altKey && !e.metaKey) {
       // 3
       let key = e.key;
