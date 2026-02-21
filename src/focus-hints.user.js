@@ -182,9 +182,18 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       if (el.disabled) return false;
       const tag = el.tagName.toLowerCase();
       const target =
-        ['input', 'select', 'textarea', 'button', 'object', 'summary', 'audio', 'video', 'iframe', 'embed'].indexOf(
-          tag
-        ) !== -1 ||
+        [
+          'input',
+          'select',
+          'textarea',
+          'button',
+          'object',
+          'summary',
+          'audio',
+          'video',
+          'iframe',
+          'embed',
+        ].indexOf(tag) !== -1 ||
         (tag === 'a' && el.hasAttribute('href')) ||
         (tag === 'area' && el.hasAttribute('href')) ||
         el.hasAttribute('contenteditable') ||
@@ -199,8 +208,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
         return (
           (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0) &&
           style.visibility !== 'hidden' &&
-          style.display !== 'none' &&
-          style.opacity !== '0'
+          style.display !== 'none'
         );
       }
     };
@@ -278,9 +286,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       }
       yield str;
     }
-    console.error(
-      `exhausted all unique labels!`
-    );
+    console.error(`exhausted all unique labels!`);
   }
 
   // fn: (measure) get label coordinates
