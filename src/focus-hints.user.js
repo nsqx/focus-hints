@@ -53,6 +53,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
   // fn: initial paint & setup
   function trigger_paint() {
     if (!is_hints_active || !document.body) return;
+    document.documentElement.appendChild(host);
     clear();
     if (default_visible) {
       setup();
