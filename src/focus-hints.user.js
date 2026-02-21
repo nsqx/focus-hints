@@ -181,7 +181,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       if (el.disabled) return false;
       const tag = el.tagName.toLowerCase();
       const target =
-        ['input', 'select', 'textarea', 'button', 'object', 'summary', 'audio', 'video'].indexOf(
+        ['input', 'select', 'textarea', 'button', 'object', 'summary', 'audio', 'video', 'iframe', 'embed'].indexOf(
           tag
         ) !== -1 ||
         (tag === 'a' && el.hasAttribute('href')) ||
