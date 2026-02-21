@@ -46,6 +46,7 @@ This userscript will run on **all sites** by default. If you wish to exclude any
 <details>
   <summary>TODO</summary>
 
+- [ ] persist hints mode state across pages
 - [ ] add option to use ergonomic hints instead of alphabetical ordering
 - [ ] implement targeted scrolling
 - [ ] put hints (blue) on scroll containers
