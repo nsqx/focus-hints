@@ -239,7 +239,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     return label;
   }
 
-  // fn: generate label text (base implementation provided by Gemini)
+  // fn: generate label text
   let code_particles;
   let code_particles_safe;
   const reserved = 'HJKL';
@@ -258,15 +258,13 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     code_particles = 'HJKL;NM,UIOPYBT';
   }
   const code_is_case_sensitive = false;
-  function* generate_codes(code_particles, ln, random = false) {
+  function* generate_codes(code_particles, ln) {
     const base = code_particles.length;
     const safe_base = code_particles_safe.length;
     const total = ln === 1 ? safe_base : safe_base * base ** (ln - 1);
 
-    const skip = total % 31 === 0 ? 37 : 31;
-    let current = Math.floor(Math.random() * total);
     for (let i = 0; i < total; i++) {
-      let val = random ? (current = (current + skip) % total) : i;
+      let val = i;
       let str = '';
       for (let j = 0; j < ln; j++) {
         if (j === ln - 1) {
@@ -280,7 +278,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       yield str;
     }
     console.error(
-      `exhausted all unique labels (more than ${Math.pow(code_particles.length, ln)} present)!`
+      `exhausted all unique labels!`
     );
   }
 
@@ -324,6 +322,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     codes = generate_codes(code_particles, code_length);
     // make a label for each tabbable element & position
     labels = {};
+    // (measure)
     for (const el of tabbable) {
       let code = codes.next().value;
       let label = make_label(code);
@@ -331,6 +330,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
       position_label(label);
       labels[code] = label;
     }
+    // (manipulate)
     for (const i in labels) {
       overlay.appendChild(labels[i]);
       position_label_render(labels[i]);
@@ -376,8 +376,14 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     if (mutations.some(m => m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
       if (mutation_timeout) clearTimeout(mutation_timeout);
       mutation_timeout = setTimeout(() => {
+        let indicator_visible = indicator.style.opacity !== '0';
+        let indicator_text = indicator.textContent;
         clear();
         setup();
+        if (indicator_visible) {
+          indicator.style.opacity = '1';
+          indicator.textContent = indicator_text;
+        }
       }, 200);
     }
   });
