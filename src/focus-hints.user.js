@@ -125,6 +125,8 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
 .${overlay_id} .label {
   font-size: 12px;
   padding: 2px;
+  top: 0;
+  left: 0;
 }
 .${overlay_id} .indicator {
   padding: 8px;
@@ -299,14 +301,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   }
   // fn: (manipulate) compose label coordinates
   function position_label_render(label, width = code_length * 11, height = 18) {
-    const x = label.hintLeft;
-    const y = label.hintTop;
-    if (label.hintLeft - width > 0) {
-      label.style.left = `${x - width}px`;
-    } else {
-      label.style.left = `${x}px`;
-    }
-    label.style.top = `${y}px`;
+    label.style.transform = `translate3d(${label.hintLeft - width > 0 ? label.hintLeft - width : label.hintLeft}px, ${label.hintTop}px, 0)`;
   }
 
   // ---
