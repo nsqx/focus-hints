@@ -294,14 +294,10 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
     console.error(`exhausted all unique labels!`);
   }
 
-  // fn: (measure) get label coordinates
+  // fn: position label
   function position_label(label) {
-    label.hintLeft = label.hintTarget.getClientRects()[0].x;
-    label.hintTop = label.hintTarget.getClientRects()[0].y;
-  }
-  // fn: (manipulate) compose label coordinates
-  function position_label_render(label, width = code_length * 11, height = 18) {
-    label.style.transform = `translate3d(${label.hintLeft - width > 0 ? label.hintLeft - width : label.hintLeft}px, ${label.hintTop}px, 0)`;
+    const x = label.hintTarget.getClientRects()[0].x;
+    label.style.transform = `translate3d(${x - width > 0 ? x - width : x}px, ${label.hintTarget.getClientRects()[0].y}px, 0)`;
   }
 
   // ---
@@ -334,12 +330,8 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       let label = make_label(code);
       label.hintTarget = el;
       position_label(label);
-      labels[code] = label;
-    }
-    // (manipulate)
-    for (const i in labels) {
       overlay.appendChild(labels[i]);
-      position_label_render(labels[i]);
+      labels[code] = label;
     }
     // keybind indicator
     indicator = overlay.appendChild(document.createElement('div'));
@@ -375,13 +367,8 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   const frame = i => {
     if (frame_id) cancelAnimationFrame(frame_id);
     frame_id = requestAnimationFrame(() => {
-      // (measure)
       for (const i in labels) {
         position_label(labels[i]);
-      }
-      // (manipulate)
-      for (const i in labels) {
-        position_label_render(labels[i]);
       }
       frame_id = null;
     });
