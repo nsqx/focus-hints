@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          focus hints
 // @namespace     https://github.com/nsqx
-// @version       1.0.1
+// @version       1.0.2
 // @description   An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
 // @author        nsqx
 // @match         *://*/*
