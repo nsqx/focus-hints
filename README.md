@@ -4,7 +4,7 @@ An opiniated, Vimium-inspired userscript to make keyboard-based web navigation e
 
 ## installation
 
-1. If you don't have a userscript manager yet, [install one](https://en.wikipedia.org/wiki/Userscript_manager).
+1. If you don't have a userscript manager yet, [install one](https://violentmonkey.github.io/get-it/).
 2. Open the userscript source ([focus-hints.user.js](https://raw.githubusercontent.com/nsqx/focus-hints/refs/heads/main/src/focus-hints.user.js)). Your userscript manager should automatically detect the script.
 3. Press **Install** or **Save**.
 
