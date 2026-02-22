@@ -2,6 +2,8 @@
 
 An opiniated, Vimium-inspired userscript to make keyboard-based web navigation effortless. Keyboard shortcuts (hints) are overlayed onto interactive elements, allowing you to traverse links, inputs, and fields without touching your mouse.
 
+<img width="1905" height="907" style="max-height: 60vh" alt="Example" src="https://github.com/user-attachments/assets/159e1636-8ba7-46f2-8f16-5bbcf0e64a4f" />
+
 ## installation
 
 1. If you don't have a userscript manager yet, [install one](https://violentmonkey.github.io/get-it/).
