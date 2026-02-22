@@ -382,7 +382,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
     }
   });
 
-  // fn: listen to scroll & resize events
+  // manage scroll & resize event listeners
   function add_listeners() {
     window.addEventListener('scroll', frame, { capture: true, passive: true });
     window.addEventListener('resize', frame, { passive: true });
@@ -398,6 +398,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
     observer.disconnect();
   }
 
+  // fn: show/hide hints according to state
   function reflect_state() {
     if (is_hints_active) {
       clear();
@@ -411,6 +412,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
     }
   }
 
+  // keybind logic
   let keybind = '';
   let indicator_timeout = null;
 
