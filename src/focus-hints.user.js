@@ -294,8 +294,9 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
 
   // fn: position label
   function position_label(label, width = code_length * 11, height = 18) {
-    const x = label.hintTarget.getClientRects()[0].x;
-    label.style.transform = `translate3d(${x - width > 0 ? x - width : x}px, ${label.hintTarget.getClientRects()[0].y}px, 0)`;
+    let rect = label.hintTarget.getClientRects()[0];
+    if (typeof rect !== 'undefined')
+      label.style.transform = `translate3d(${rect.x - width > 0 ? rect.x - width : rect.x}px, ${rect.y}px, 0)`;
   }
 
   // ---
