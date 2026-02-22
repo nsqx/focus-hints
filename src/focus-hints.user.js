@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name          focus hints
 // @namespace     http://github.com/nsqx
-// @version       1.0.0
+// @version       1.0.1
 // @description   An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
 // @author        nsqx
 // @match         *://*/*
 // @grant         GM_setValue
 // @grant         GM_getValue
+// @grant         GM_addValueChangeListener
 // @grant         GM_registerMenuCommand
 // @run-at        document-start
 // @downloadURL   https://raw.githubusercontent.com/nsqx/focus-hints/refs/heads/main/src/focus-hints.user.js
@@ -15,7 +16,7 @@
 (function () {
   'use strict';
 
-  let is_hints = GM_getValue('nsqx/focus-hints:is-hints', true);
+  let is_hints_active = GM_getValue('nsqx/focus-hints:is-hints', true);
   let is_alphabetical = GM_getValue('nsqx/focus-hints:is-alphabetical', true);
 
   GM_registerMenuCommand(
@@ -27,7 +28,7 @@
     }
   );
 
-  focusHints({ is_hints: is_hints, alphabetical: is_alphabetical });
+  focusHints({ is_hints_active: is_hints_active, alphabetical: is_alphabetical });
 })();
 
 // ---
@@ -35,9 +36,9 @@
 /**
  * @description An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
  * @author nsqx
- * @param {boolean} is_hints --- enable focus hints on initialization
+ * @param {boolean} is_hints_active --- enable focus hints on initialization
  */
-function focusHints({ is_hints = true, alphabetical = true } = {}) {
+function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   // check if an instance is already present
   if (typeof window.__focusHintsSnowflake__ === 'string') return;
 
@@ -58,7 +59,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
     if (!is_hints_active || !document.body) return;
     document.documentElement.appendChild(host);
     clear();
-    if (is_hints) {
+    if (is_hints_active) {
       setup();
       overlay.showPopover();
       add_listeners();
@@ -225,7 +226,6 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
           return is_tabbable(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         },
       });
-
       let current = walker.nextNode();
       while (current) {
         if (use_shadow && current.shadowRoot) {
@@ -256,12 +256,12 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   // fn: generate label text
   let code_particles;
   let code_particles_safe;
-  const reserved = 'HJKL';
+  const reserved = 'HJKL'; // HJKL reserved for page movement
   if (alphabetical) {
     code_particles_safe = 'ABCDEFGIMNOPQRSTUVWXYZ'
       .split('')
       .filter(c => !reserved.includes(c))
-      .join(''); // HJKL reserved for page movement
+      .join('');
     code_particles = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ;,';
   } else {
     // two-handed ergonomic layout for QWERTY layouts
@@ -271,8 +271,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       .join('');
     code_particles = 'SDFGHJKLVBRTYUIOPNM;';
   }
-  const code_is_case_sensitive = false;
-  function* generate_codes(code_particles, ln) {
+  function* generate_codes(code_particles_safe, code_particles, ln) {
     const base = code_particles.length;
     const safe_base = code_particles_safe.length;
     const total = ln === 1 ? safe_base : safe_base * base ** (ln - 1);
@@ -309,7 +308,6 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   let codes;
 
   function setup() {
-    if (window.self === window.top) GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
     // get tabbable elements
     tabbable = get_tabbable();
     if (tabbable.length <= code_particles_safe.length) {
@@ -321,10 +319,9 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
     } else {
       code_length = 4;
     }
-    codes = generate_codes(code_particles, code_length);
+    codes = generate_codes(code_particles_safe, code_particles, code_length);
     // make a label for each tabbable element & position
     labels = {};
-    // (measure)
     for (const el of tabbable) {
       let code = codes.next().value;
       let label = make_label(code);
@@ -341,7 +338,6 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
 
   // fn: clear labels
   function clear() {
-    if (window.self === window.top) GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
     code_length = 0;
     tabbable = [];
     labels = {};
@@ -387,6 +383,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
     }
   });
 
+  // fn: listen to scroll & resize events
   function add_listeners() {
     window.addEventListener('scroll', frame, { capture: true, passive: true });
     window.addEventListener('resize', frame, { passive: true });
@@ -402,9 +399,21 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
     observer.disconnect();
   }
 
+  function reflect_state() {
+    if (is_hints_active) {
+      clear();
+      setup();
+      overlay.showPopover();
+      add_listeners();
+    } else {
+      overlay.hidePopover();
+      clear();
+      clear_listeners();
+    }
+  }
+
   let keybind = '';
   let indicator_timeout = null;
-  let is_hints_active = is_hints;
 
   function clear_keybind() {
     keybind = '';
@@ -432,21 +441,12 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       e.stopImmediatePropagation();
       keybind = '';
       is_hints_active = !is_hints_active;
-      if (is_hints_active) {
-        clear();
-        setup();
-        overlay.showPopover();
-        add_listeners();
-      } else {
-        overlay.hidePopover();
-        clear();
-        clear_listeners();
-      }
+      if (window.self === window.top) GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
+      reflect_state();
       return;
     }
-    if (!is_hints_active) {
-      return;
-    }
+
+    if (!is_hints_active) return;
     if (e.key === 'Enter' || e.key === ' ') {
       // 2
       clearTimeout(mutation_timeout);
@@ -461,6 +461,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       // 3
       let key = e.key;
       let key_upper = key.toUpperCase();
+
       if (keybind.length === 0)
         switch (key_upper) {
           case 'K':
@@ -504,6 +505,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
             window.scrollTo({ left: document.scrollingElement.scrollWidth, behavior: 'instant' });
             return;
         }
+
       if (key === 'Escape') {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -512,15 +514,15 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
         clear_keybind();
         return;
       }
-      if (!code_is_case_sensitive) key = key_upper;
+
       if (
-        (keybind.length === 0 && code_particles_safe.indexOf(key) !== -1) ||
-        (keybind.length !== 0 && code_particles.indexOf(key) !== -1)
+        (keybind.length === 0 && code_particles_safe.indexOf(key_upper) !== -1) ||
+        (keybind.length !== 0 && code_particles.indexOf(key_upper) !== -1)
       ) {
         // 4
         e.preventDefault();
         e.stopImmediatePropagation();
-        keybind += key;
+        keybind += key_upper;
         indicator.style.opacity = '1';
         indicator.textContent = keybind;
 
@@ -543,9 +545,8 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
           clear_keybind();
         }, 3000);
 
-        if (keybind.length < code_length) {
-          return;
-        } else if (keybind.length > code_length) {
+        if (keybind.length < code_length) return;
+        else if (keybind.length > code_length) {
           clear_keybind();
           return;
         }
@@ -565,4 +566,12 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       }
     }
   }
+
+  // sync state
+  if (GM_addValueChangeListener)
+    GM_addValueChangeListener('nsqx/focus-hints:is-hints', (name, old_value, new_value, remote) => {
+      if (!remote) return;
+      is_hints_active = new_value;
+      reflect_state();
+    });
 }
