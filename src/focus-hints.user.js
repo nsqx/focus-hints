@@ -295,7 +295,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   }
 
   // fn: position label
-  function position_label(label) {
+  function position_label(label, width = code_length * 11, height = 18) {
     const x = label.hintTarget.getClientRects()[0].x;
     label.style.transform = `translate3d(${x - width > 0 ? x - width : x}px, ${label.hintTarget.getClientRects()[0].y}px, 0)`;
   }
