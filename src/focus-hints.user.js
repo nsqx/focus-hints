@@ -15,15 +15,16 @@
 (function () {
   'use strict';
 
-  let auto_show = GM_getValue('nsqx/focus-hints:show-by-default', true);
+  let is_hints = GM_getValue('nsqx/focus-hints:is-hints', true);
+  let is_alphabetical = GM_getValue('nsqx/focus-hints:is-alphabetical', true);
 
-  GM_registerMenuCommand(`${auto_show ? 'Hide' : 'Show'} focus hints by default`, () => {
-    auto_show = !auto_show;
-    GM_setValue('nsqx/focus-hints:show-by-default', auto_show);
+  GM_registerMenuCommand(`Use ${is_alphabetical ? 'ergonomic' : 'alphabetical'} hint labelling`, () => {
+    is_alphabetical = !is_alphabetical;
+    GM_setValue('nsqx/focus-hints:is-alphabetical', is_alphabetical);
     location.reload();
   });
 
-  focusHints({ default_visible: auto_show });
+  focusHints({ is_hints: is_hints, alphabetical: is_alphabetical });
 })();
 
 //
@@ -32,9 +33,9 @@
  * @description An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
  * @author nsqx
  * @version 1.0.0
- * @param {boolean} default_visible --- enable focus hints on initialization
+ * @param {boolean} is_hints --- enable focus hints on initialization
  */
-function focusHints({ default_visible = true, alphabetical = true } = {}) {
+function focusHints({ is_hints = true, alphabetical = true } = {}) {
   // check if an instance is already present
   if (typeof window.__focusHintsSnowflake__ === 'string') return;
 
@@ -55,7 +56,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     if (!is_hints_active || !document.body) return;
     document.documentElement.appendChild(host);
     clear();
-    if (default_visible) {
+    if (is_hints) {
       setup();
       overlay.showPopover();
       add_listeners();
@@ -260,11 +261,11 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
     code_particles = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ;,';
   } else {
     // two-handed ergonomic layout for QWERTY layouts
-    code_particles_safe = 'SDFGZXCVAQWER'
+    code_particles_safe = 'SDFGCVERTWQAXZ'
       .split('')
       .filter(c => !reserved.includes(c))
       .join('');
-    code_particles = 'HJKL;NM,UIOPYBT';
+    code_particles = 'SDFGHJKLVBRTYUIOPNM;';
   }
   const code_is_case_sensitive = false;
   function* generate_codes(code_particles, ln) {
@@ -315,6 +316,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
   let codes;
 
   function setup() {
+    if (window.self === window.top) GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
     // get tabbable elements
     tabbable = get_tabbable();
     if (tabbable.length <= code_particles_safe.length) {
@@ -350,6 +352,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
 
   // fn: clear labels
   function clear() {
+    if (window.self === window.top) GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
     code_length = 0;
     tabbable = [];
     labels = {};
@@ -417,7 +420,7 @@ function focusHints({ default_visible = true, alphabetical = true } = {}) {
 
   let keybind = '';
   let indicator_timeout = null;
-  let is_hints_active = default_visible;
+  let is_hints_active = is_hints;
 
   function clear_keybind() {
     keybind = '';
