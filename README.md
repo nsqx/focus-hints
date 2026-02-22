@@ -1,6 +1,6 @@
 # focus hints
 
-An opiniated, Vimium-inspired userscript that makes keyboard-based navigation effortless on the webpage. Keyboard shortcuts (hints) are overlayed onto interactive elements, allowing you to traverse links, inputs, and fields without touching your mouse.
+An opiniated, Vimium-inspired userscript to make keyboard-based web navigation effortless. Keyboard shortcuts (hints) are overlayed onto interactive elements, allowing you to traverse links, inputs, and fields without touching your mouse.
 
 ## installation
 
@@ -10,9 +10,9 @@ An opiniated, Vimium-inspired userscript that makes keyboard-based navigation ef
 
 ## usage
 
-This userscript will overlay keyboard hints next to interactive elements, labelled by a key or some sequence of keys. The key sequences can be typed to bring focus to the corresponding element. When the hints are visible, any key pressed which may form a valid key sequence will be intercepted. As such, the page will not receive the relevant keyboard event. To send keyboard events to the page (e.g., to type into a field), you must exit hints mode.
+This userscript will overlay keyboard hints next to interactive elements, labelled by a key or some sequence of keys. The key sequence can be typed to bring focus to the corresponding element. When hints are visible, any key pressed which may form a valid key sequence will be intercepted. As such, the page will not receive the relevant keyboard event. To send keyboard events to the page (e.g., to type into a field), you must exit hints mode.
 
-To toggle focus hints, press `Ctrl` + <code>&#96;</code> (backtick). When in hints mode, you can also press `Esc` to close hints when there is no active key sequence.
+To toggle focus hints, press `Ctrl` + <code>&#96;</code> (backtick). When in hints mode, you can also press `Esc` to close hints when there are no active key sequences.
 
 ### keyboard commands
 
@@ -32,7 +32,7 @@ To toggle focus hints, press `Ctrl` + <code>&#96;</code> (backtick). When in hin
 
 ## configuration
 
-The script will order hints alphabetically by default. To enable ergonomic ordering for QWERTY keyboard layouts, you can select **Use ergonomic hint labelling** in your userscript manager menu. The page will be refreshed to reflect the updated preferences.
+The script will order hints alphabetically by default. To enable ergonomic ordering for the QWERTY keyboard layout, you can select **Use ergonomic hint labelling** in your userscript manager menu. The page will be refreshed to reflect the updated preferences.
 
 ## notes
 
@@ -40,8 +40,8 @@ This userscript will run on **all sites** by default. If you wish to exclude any
 
 1. Click the **Edit** button under **focus hints** in your userscript manager.
 2. Switch to the **Settings** tab.
-3. Under `@exclude-match` rules, uncheck **Keep original** and add your relevant page URL globs.
-   - For example, adding `*://example.com/*` and `*://*.example.com/*` will restrict this userscript from running on all pages and subdomains under the `example.com` domain.
+3. Under `@exclude-match`, uncheck **Keep original** and add your relevant page URL globs.
+   - For example, adding `*://example.com/*` and `*://*.example.com/*` will restrict this userscript from running on all pages and subdomains in `example.com`.
 
 \*Although this userscript runs completely locally, it's good practice to disable extensions and userscripts on pages with sensitive data, such as banking sites or government portals.
 
