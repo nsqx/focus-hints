@@ -18,21 +18,23 @@
   let is_hints = GM_getValue('nsqx/focus-hints:is-hints', true);
   let is_alphabetical = GM_getValue('nsqx/focus-hints:is-alphabetical', true);
 
-  GM_registerMenuCommand(`Use ${is_alphabetical ? 'ergonomic' : 'alphabetical'} hint labelling`, () => {
-    is_alphabetical = !is_alphabetical;
-    GM_setValue('nsqx/focus-hints:is-alphabetical', is_alphabetical);
-    location.reload();
-  });
+  GM_registerMenuCommand(
+    `Use ${is_alphabetical ? 'ergonomic' : 'alphabetical'} hint labelling`,
+    () => {
+      is_alphabetical = !is_alphabetical;
+      GM_setValue('nsqx/focus-hints:is-alphabetical', is_alphabetical);
+      location.reload();
+    }
+  );
 
   focusHints({ is_hints: is_hints, alphabetical: is_alphabetical });
 })();
 
-//
+// ---
 
 /**
  * @description An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
  * @author nsqx
- * @version 1.0.0
  * @param {boolean} is_hints --- enable focus hints on initialization
  */
 function focusHints({ is_hints = true, alphabetical = true } = {}) {
