@@ -159,15 +159,15 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   if ('popover' in overlay || Object.prototype.hasOwnProperty.call(HTMLElement, 'popover')) {
     overlay.popover = 'manual';
   } else {
-    overlay.showPopover = i => {
+    overlay.showPopover = () => {
       overlay.style.opacity = '1';
       overlay.dataset.popoverState = 'visible';
     };
-    overlay.hidePopover = i => {
+    overlay.hidePopover = () => {
       overlay.style.opacity = '0';
       overlay.dataset.popoverState = 'hidden';
     };
-    overlay.togglePopover = i => {
+    overlay.togglePopover = () => {
       if (overlay.dataset.popoverState == 'hidden') {
         overlay.showPopover();
       } else {
@@ -330,7 +330,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       let label = make_label(code);
       label.hintTarget = el;
       position_label(label);
-      overlay.appendChild(labels[i]);
+      overlay.appendChild(label);
       labels[code] = label;
     }
     // keybind indicator
@@ -364,11 +364,11 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
 
   // update label positions
   let frame_id = null;
-  const frame = i => {
+  const frame = () => {
     if (frame_id) cancelAnimationFrame(frame_id);
     frame_id = requestAnimationFrame(() => {
-      for (const i in labels) {
-        position_label(labels[i]);
+      for (const label of labels) {
+        position_label(label);
       }
       frame_id = null;
     });
@@ -417,7 +417,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
     indicator.textContent = keybind + '?';
     keybind = '';
     clearTimeout(indicator_timeout);
-    indicator_timeout = setTimeout(i => {
+    indicator_timeout = setTimeout(() => {
       clear_keybind();
     }, 1000);
   }
@@ -539,7 +539,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
         }
 
         clearTimeout(indicator_timeout);
-        indicator_timeout = setTimeout(i => {
+        indicator_timeout = setTimeout(() => {
           clear_keybind();
         }, 3000);
 
@@ -556,7 +556,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
           ref.hintTarget.focus({ focusVisible: true });
           keybind = '';
           clearTimeout(indicator_timeout);
-          indicator_timeout = setTimeout(i => {
+          indicator_timeout = setTimeout(() => {
             clear_keybind();
           }, 1000);
         } else {
