@@ -367,8 +367,8 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   const frame = () => {
     if (frame_id) cancelAnimationFrame(frame_id);
     frame_id = requestAnimationFrame(() => {
-      for (const label of labels) {
-        position_label(label);
+      for (const i in labels) {
+        position_label(labels[i]);
       }
       frame_id = null;
     });
