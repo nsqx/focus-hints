@@ -441,7 +441,10 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
   }
 
   function keydown_handler(e) {
-    if ((e.ctrlKey && e.key === '`') || (is_hints_active && e.key === 'Escape' && keybind === '')) {
+    if (
+      (e.ctrlKey && e.key === '`') ||
+      (is_hints_active && e.key === 'Escape' && keybind.length === 0)
+    ) {
       // 1
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -476,7 +479,7 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
       // 3
       let key = e.key;
       let key_upper = key.toUpperCase();
-      if (keybind === '')
+      if (keybind.length === 0)
         switch (key_upper) {
           case 'K':
             e.preventDefault();
@@ -528,7 +531,10 @@ function focusHints({ is_hints = true, alphabetical = true } = {}) {
         return;
       }
       if (!code_is_case_sensitive) key = key_upper;
-      if (code_particles.indexOf(key) !== -1 || code_particles_safe.indexOf(key) !== -1) {
+      if (
+        (keybind.length === 0 && code_particles_safe.indexOf(key) !== -1) ||
+        (keybind.length !== 0 && code_particles.indexOf(key) !== -1)
+      ) {
         // 4
         e.preventDefault();
         e.stopImmediatePropagation();
