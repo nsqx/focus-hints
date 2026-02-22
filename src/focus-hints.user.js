@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          focus hints
-// @namespace     http://github.com/nsqx
+// @namespace     https://github.com/nsqx
 // @version       1.0.1
 // @description   An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
 // @author        nsqx
@@ -86,7 +86,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
     shadow_root = host;
   }
 
-  // setup shadow styles
+  // setup overlay styles
   const css_text = `
 .${overlay_id} {
   pointer-events: none;
@@ -108,15 +108,15 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   background-color: yellow;
   color: black;
   font-family: 'SF Mono', ui-monospace, 
-                Menlo, Monaco, 
-                'Cascadia Mono', 'Segoe UI Mono', 
-                'Roboto Mono', 
-                'Oxygen Mono', 
-                'Ubuntu Mono', 
-                'Source Code Pro',
-                'Fira Mono', 
-                'Droid Sans Mono', 
-                'Consolas', 'Courier New', monospace;
+               Menlo, Monaco, 
+               'Cascadia Mono', 'Segoe UI Mono', 
+               'Roboto Mono', 
+               'Oxygen Mono', 
+               'Ubuntu Mono', 
+               'Source Code Pro',
+               'Fira Mono', 
+               'Droid Sans Mono', 
+               'Consolas', 'Courier New', monospace;
   position: absolute;
   opacity: 90%;
   font-weight: 600;
@@ -136,7 +136,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   left: 50%;
   transform: translateX(-50%);
 }
-  `;
+`;
   if (
     shadow_root.adoptedStyleSheets &&
     typeof CSSStyleSheet !== 'undefined' &&
@@ -152,7 +152,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
     shadow_root.appendChild(style);
   }
 
-  // create hints container
+  // create overlay
   const overlay = shadow_root.appendChild(document.createElement('div'));
   overlay.className = overlay_id;
 
@@ -169,7 +169,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
       overlay.dataset.popoverState = 'hidden';
     };
     overlay.togglePopover = () => {
-      if (overlay.dataset.popoverState == 'hidden') {
+      if (overlay.dataset.popoverState === 'hidden') {
         overlay.showPopover();
       } else {
         overlay.hidePopover();
@@ -183,7 +183,6 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   // fn: get tabbable elements
   function get_tabbable(use_shadow = true) {
     const tabbable = [];
-
     const is_tabbable = el => {
       if (el.disabled) return false;
       const tag = el.tagName.toLowerCase();
