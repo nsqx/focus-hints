@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          focus hints
 // @namespace     https://github.com/nsqx
-// @version       1.0.2
+// @version       1.0.3
 // @description   An opiniated, Vimium-inspired userscript to make keyboard-based navigation effortless.
 // @author        nsqx
 // @match         *://*/*
@@ -123,6 +123,10 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   user-select: none;
   line-height: 1;
 }
+.${overlay_id} .frame {
+  background-color: red;
+  color: white;
+}
 .${overlay_id} .label {
   font-size: 12px;
   padding: 2px;
@@ -132,7 +136,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
 .${overlay_id} .indicator {
   padding: 8px;
   font-size: 16px;
-  bottom: 64px;
+  bottom: min(64px, 14vh);
   left: 50%;
   transform: translateX(-50%);
 }
@@ -246,7 +250,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   // fn: make a label with text
   function make_label(text, additional = '') {
     const label = document.createElement('div');
-    label.className = additional ? 'label ' + additional : 'label';
+    label.className = (additional ? 'label ' + additional : 'label') + (is_frame ? ' frame' : '');
     label.textContent = text;
     label.ariaHidden = 'true';
     return label;
@@ -306,6 +310,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   let labels;
   let indicator;
   let codes;
+  const is_frame = window.self !== window.top;
 
   function setup() {
     // get tabbable elements
@@ -332,7 +337,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
     }
     // keybind indicator
     indicator = overlay.appendChild(document.createElement('div'));
-    indicator.className = 'indicator';
+    indicator.className = 'indicator' + (is_frame ? ' frame' : '');
     indicator.style.opacity = '0';
   }
 
@@ -443,7 +448,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
       e.stopImmediatePropagation();
       keybind = '';
       is_hints_active = !is_hints_active;
-      if (window.self === window.top) GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
+      GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
       reflect_state();
       return;
     }
