@@ -57,7 +57,6 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
   // fn: initial paint & setup
   function trigger_paint() {
     if (!is_hints_active || !document.body) return;
-    document.documentElement.appendChild(host);
     clear();
     if (is_hints_active) {
       setup();
@@ -448,6 +447,7 @@ function focusHints({ is_hints_active = true, alphabetical = true } = {}) {
       e.stopImmediatePropagation();
       keybind = '';
       is_hints_active = !is_hints_active;
+      document.documentElement.appendChild(host);
       GM_setValue('nsqx/focus-hints:is-hints', is_hints_active);
       reflect_state();
       return;
